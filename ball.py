@@ -1,6 +1,6 @@
 import pygame as pg
 import sys
-from random import randint
+from random import randint, choice
 
 
 ROJO = (255, 0, 0)
@@ -29,11 +29,21 @@ class Bola():
         self.x += self.vx
         self.y += self.vy
 
-        if self.y <= 0 or self.y >= ALTO:
+        if self.y <= 0:
             self.vy = -self.vy
     
         if self.x <= 0 or self.x >= ANCHO:
             self.vx = -self.vx
+
+        if self.y >= ALTO:
+            self.x = ANCHO // 2
+            self.y = ALTO // 2
+            self.vx = randint(5, 10) * choice([-1, 1])
+            self.vy = randint(5, 10) * choice([-1, 1])
+            pg.time.delay(500)
+            return True
+        return False
+
 
     def dibujar(self, screen):
         pg.draw.circle(screen, self.color, (self.x, self.y), self.anchura//2)
@@ -71,6 +81,9 @@ class Raqueta():
         if teclas_pulsadas[pg.K_RIGHT] and self.x < ANCHO - self.anchura:
             self.x += self.vx
 
+
+vidas = 3
+
 ranges =[randint(-10, -5), randint(5, 10)]
 bola = Bola(randint(0, ANCHO), 
             randint(0, ALTO),
@@ -80,8 +93,8 @@ bola = Bola(randint(0, ANCHO),
 raqueta = Raqueta()
 
 game_over = False
-while not game_over:
-    reloj.tick(120)
+while not game_over and vidas > 0:
+    reloj.tick(60)
     # gestion de eventos
     for evento in pg.event.get():
         if evento.type == pg.QUIT:
@@ -89,7 +102,9 @@ while not game_over:
 
     # Modificacion de estado
     raqueta.actualizar()
-    bola.actualizar()
+    pierdebola = bola.actualizar()
+    if pierdebola:
+        vidas -= 1
     bola.comprueba_colision(raqueta)
 
     # Gestion de la pantalla
