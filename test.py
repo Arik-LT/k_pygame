@@ -173,6 +173,7 @@ class Game():
         self.pantalla = pg.display.set_mode((ANCHO, ALTO))
         self.vidas = 3
         self.puntuacion = 0
+        self.game_state = "intro"
 
         self.todoGrupo = pg.sprite.Group()
         self.grupoJugador = pg.sprite.Group()
@@ -188,6 +189,7 @@ class Game():
 
         self.cuentaPuntos = Marcador(10,10)
         self.cuentaVidas = Marcador(790, 10, "topright")
+        self.intro_texto = Marcador(ANCHO//2, ALTO//2, "center", 50)
         
         self.fondo = pg.image.load("assets_ball/background.png")
         
@@ -201,39 +203,63 @@ class Game():
         self.todoGrupo.add(self.cuentaPuntos, self.cuentaVidas)
 
     def bucle_principal(self):
-        game_over = False
-        reloj = pg.time.Clock()
+        self.game_over = False
+        self.reloj = pg.time.Clock()
         contador_milisegundos = 0
         segundero = 0
 
-        while not game_over and self.vidas > 0: 
-            dt = reloj.tick(FPS)
+        while not self.game_over and self.vidas > 0: 
+            game.state_manager()
 
-            for evento in pg.event.get():
-                if evento.type == pg.QUIT:
-                    game_over = True
-
-            self.cuentaPuntos.text = (f"Puntos: {self.puntuacion}")
-            self.cuentaVidas.text = (f"Vidas: {self.vidas}")
-
-            self.bola.prueba_colision(self.grupoJugador)
+    def intro(self):
+        teclas_pulsadas = pg.key.get_pressed()
+        ready_text = pg.image.load("assets_ball/text_ready.png")
+        for evento in pg.event.get():
+            if evento.type == pg.QUIT:
+                self.game_over = True
             
-            tocados= self.bola.prueba_colision(self.grupoLadrillos)
-            for ladrillo in tocados:
-                self.puntuacion += 5
-                if ladrillo.desaparece():
-                    self.grupoLadrillos.remove(ladrillo)
-                    self.todoGrupo.remove(ladrillo)
-
-            self.todoGrupo.update(dt)
-
-            if self.bola.estado == Bola.Estado.muerta:
-                self.vidas -= 1
-
-            self.pantalla.blit(self.fondo, (0,0))
-            self.todoGrupo.draw(self.pantalla)
+            if teclas_pulsadas[pg.K_SPACE]:
+                self.game_state = "main_game"
             
-            pg.display.flip()
+        self.pantalla.blit(self.fondo, (0,0))
+        self.pantalla.blit(ready_text, (ANCHO//2 - 115, ALTO//2 - 33))
+        pg.display.flip()
+
+    def main_game(self):
+        dt = self.reloj.tick(FPS)
+
+        for evento in pg.event.get():
+            if evento.type == pg.QUIT:
+                self.game_over = True
+
+        self.cuentaPuntos.text = (f"Puntos: {self.puntuacion}")
+        self.cuentaVidas.text = (f"Vidas: {self.vidas}")
+
+        self.bola.prueba_colision(self.grupoJugador)
+        
+        tocados= self.bola.prueba_colision(self.grupoLadrillos)
+        for ladrillo in tocados:
+            self.puntuacion += 5
+            if ladrillo.desaparece():
+                self.grupoLadrillos.remove(ladrillo)
+                self.todoGrupo.remove(ladrillo)
+
+        self.todoGrupo.update(dt)
+
+        if self.bola.estado == Bola.Estado.muerta:
+            self.vidas -= 1
+
+        self.pantalla.blit(self.fondo, (0,0))
+        self.todoGrupo.draw(self.pantalla)
+        
+        pg.display.flip()
+
+    def state_manager(self):
+        if self.game_state == "intro":
+            return self.intro()
+        if self.game_state == "main_game":
+            return self.main_game()
+
 
 if __name__ == '__main__':
     pg.init()
